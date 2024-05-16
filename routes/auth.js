@@ -16,8 +16,8 @@ router.post(
             .isEmpty()
             .withMessage('CPF é obrigatório.')
             .custom(async (cpf) => {
-                const [user] = await User.findByCpf(cpf);
-                if (user.length > 0) {
+                const quantidade = await User.findByCpf(cpf);
+                if (quantidade > 0) {
                     return Promise.reject('CPF já cadastrado!');
                 }
             }),
@@ -25,8 +25,8 @@ router.post(
             .isEmail()
             .withMessage('Por favor, insira um e-mail válido.')
             .custom(async (email) => {
-                const [user] = await User.findByEmail(email);
-                if (user.length > 0) {
+                const quantidade = await User.findByEmail(email);
+                if (quantidade > 0) {
                     return Promise.reject('Endereço de e-mail já cadastrado!');
                 }
             })

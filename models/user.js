@@ -12,12 +12,18 @@ module.exports = class User {
 
     static async findByEmail(email) {
         const [rows, fields] = await db.promise().query('SELECT * FROM tb_usuario WHERE email = ?', [email]);
-        return rows;
+        if (rows.length > 0) {
+            return Promise.reject('EMAIL já cadastrado!');
+        }
+        return rows.length;
     }
 
     static async findByCpf(cpf) {
         const [rows, fields] = await db.promise().query('SELECT * FROM tb_usuario WHERE cpf = ?', [cpf]);
-        return rows;
+        if (rows.length > 0) {
+            return Promise.reject('CPF já cadastrado!');
+        }
+        return rows.length;
     }
 
     static async save(user) {
