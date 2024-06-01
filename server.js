@@ -1,8 +1,10 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const ports = process.env.PORT || 3000;
+
 const authRoutes = require('./routes/auth');
 const errorController = require('./controllers/error');
+const authJWT = require('./middlewares/authjwt')
 
 
 const app = express();
@@ -20,6 +22,10 @@ app.use(bodyParser.json());
 
  app.use('/auth', authRoutes); 
 
+ app.get('/protected', authJWT, (req, res) => {
+    res.json({ message: 'Você acessou uma rota protegida!', user: req.user });
+});
+
  //controladores de erro
  app.use(errorController.get404);
  app.use(errorController.get500);
@@ -32,7 +38,7 @@ app.listen(ports, function check(error){
         console.log("Não está escutando server na porta 3000");
     }
     else {
-        console.log("Servidor escutado na porta ${port}");
+        console.log("Servidor escutado na porta 3000");
     } 
 });
 

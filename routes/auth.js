@@ -11,6 +11,8 @@ router.post(
     [
         body('nome').trim().not().isEmpty().withMessage('Nome é obrigatório.'),
         body('cpf')
+            .isString()
+            .isLength({min: 11, max: 11}).withMessage('CPF inválido')
             .trim()
             .not()
             .isEmpty()
@@ -32,6 +34,7 @@ router.post(
             })
             .normalizeEmail(),
         body('celular')
+            .isNumeric(). withMessage('Digite apenas números')
             .trim()
             .not()
             .isEmpty()
@@ -44,5 +47,17 @@ router.post(
     authController.cadastro
 );
 
+
+router.post('/login', [
+    body('email')
+        .isEmail()
+        .withMessage('Por favor, insira um e-mail válido.')
+        .normalizeEmail(),
+    body('senha')
+        .trim()
+        .isLength({ min: 7 })
+        .withMessage('A senha deve ter no mínimo 7 caracteres.')
+],
+authController.login);
 
 module.exports = router;
