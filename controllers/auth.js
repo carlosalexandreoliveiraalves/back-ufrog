@@ -70,7 +70,7 @@ exports.login = async (req, res, next) => {
         }
 
         const token = jwt.sign(
-            { userId: user.id, email: user.email },
+            { userId: user.id, email: user.email, fk_tipo_usuario: user.fk_tipo_usuario },
             'senhadaufrogparaseguranca',
             { expiresIn: '1h' }
         );
