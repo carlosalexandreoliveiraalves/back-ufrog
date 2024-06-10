@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const cors = require('cors'); // Adicionei a importação do pacote cors
-const ports = process.env.PORT || 3000;
+const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -10,19 +10,18 @@ const errorController = require('./controllers/error');
 const authJWT = require('./middlewares/authjwt');
 
 const app = express();
+const ports = process.env.PORT || 3000;
 
-app.use(bodyParser.json());
-
-// Configurar CORS
+// Configurar CORS para permitir requisições do frontend
 app.use(cors({
     origin: 'http://localhost:4200',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Cabeçalho CORS adicional (opcional, se já estiver configurando o CORS acima)
+// Middleware CORS adicional para garantir que todas as solicitações OPTIONS sejam tratadas corretamente
 app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Permite todas as origens
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     next();
@@ -31,9 +30,19 @@ app.use((req, res, next) => {
 // Adicionando um middleware para lidar com solicitações OPTIONS
 app.options('*', cors());
 
-app.use('/auth', authRoutes); 
-app.use('/produto', produtoRoutes); // Adicione as rotas de produto
+// Servir arquivos estáticos do diretório 'uploads'
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Middleware para bodyParser
+app.use(bodyParser.json());
+
+// Rotas de autenticação
+app.use('/auth', authRoutes); 
+
+// Rotas de produto
+app.use('/produto', produtoRoutes);
+
+// Exemplo de rota protegida
 app.get('/protected', authJWT, (req, res) => {
     res.json({ message: 'Você acessou uma rota protegida!', user: req.user });
 });
@@ -42,12 +51,12 @@ app.get('/protected', authJWT, (req, res) => {
 app.use(errorController.get404);
 app.use(errorController.get500);
 
-// Estabelecendo a porta de saída (port)
+// Iniciar o servidor na porta especificada
 app.listen(ports, function check(error) {
     if (error) {
         console.log("Não está escutando server na porta 3000");
     } else {
-        console.log("Servidor escutado na porta 3000");
+        console.log(`Servidor escutado na porta ${ports}`);
     } 
 });
 
