@@ -13,7 +13,10 @@ class Produto {
         return db.promise().execute(
             'INSERT INTO tb_produto (desc_produto, nome_produto, val_venda, foto_produto) VALUES (?, ?, ?, ?)',
             [this.desc_produto, this.nome_produto, this.val_venda, this.foto_produto]
-        );
+        ).then(([result]) => {
+            // Retorna o ID inserido
+            return { insertId: result.insertId };
+        });;
     }
 
     static update(id, desc_produto, nome_produto, val_venda, foto_produto) {

@@ -6,6 +6,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const produtoRoutes = require('./routes/product');
+const categoriasRoutes = require('./routes/category');
 const errorController = require('./controllers/error');
 const authJWT = require('./middlewares/authjwt');
 
@@ -41,6 +42,8 @@ app.use('/auth', authRoutes);
 
 // Rotas de produto
 app.use('/produto', produtoRoutes);
+
+app.use('/categoria', categoriasRoutes);
 
 // Exemplo de rota protegida
 app.get('/protected', authJWT, (req, res) => {

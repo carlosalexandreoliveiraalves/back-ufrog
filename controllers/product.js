@@ -3,25 +3,50 @@ const db = require('../util/database');
 
 // Cria um novo produto
 exports.createProduct = async (req, res) => {
-    console.log('Request Body:', req.body); // Log do corpo da requisição
-    console.log('Request File:', req.file); // Log do arquivo da requisição
+  console.log('Request Body:', req.body); // Log do corpo da requisição
+  console.log('Request File:', req.file); // Log do arquivo da requisição
 
-    const { nome_produto, desc_produto, val_venda } = req.body;
-    const foto_produto = req.file ? req.file.buffer : null;
+  const { nome_produto, desc_produto, val_venda, categorias } = req.body;
+  const foto_produto = req.file ? req.file.buffer : null;
 
-    if (!nome_produto || !desc_produto || val_venda == null || !foto_produto) {
-        return res.status(400).json({ message: "Todos os campos são obrigatórios" });
-    }
+  if (!nome_produto || !desc_produto || !val_venda || !foto_produto) {
+      return res.status(400).json({ message: "Todos os campos são obrigatórios" });
+  }
 
-    try {
-        const novoProduto = new Produto(null, desc_produto, nome_produto, val_venda, foto_produto);
-        const result = await novoProduto.save();
+  // Converta categorias de string para array de IDs
+  const categoriasArray = categorias ? categorias.split(',').map(id => parseInt(id.trim(), 10)) : [];
+  
+  // Verifique se val_venda é um número válido
+  if (isNaN(parseFloat(val_venda))) {
+      return res.status(400).json({ message: "Valor de venda inválido" });
+  }
 
-        res.status(201).json({ message: "Produto criado com sucesso", productId: result.insertId });
-    } catch (error) {
-        console.error("Erro ao criar produto:", error);
-        res.status(500).json({ message: "Erro ao criar produto" });
-    }
+  try {
+      // Cria uma nova instância do produto
+      const novoProduto = new Produto(null, desc_produto, nome_produto, val_venda, foto_produto);
+      
+      // Salva o produto e obtém o ID
+      const result = await novoProduto.save(); // Agora deve retornar { insertId: ... }
+      const produtoId = result.insertId;
+
+      // Verifica se produtoId foi definido
+      if (!produtoId) {
+          throw new Error("Produto ID não retornado após salvar o produto.");
+      }
+      
+      console.log("Produto ID:", produtoId); // Log para verificar o produtoId
+
+      // Insere registros na tabela produto_categoria para cada categoria fornecida
+      for (const categoriaId of categoriasArray) {
+          await db.query('INSERT INTO tb_produto_categoria (id_produto, id_categoria) VALUES (?, ?)', [produtoId, categoriaId]);
+      }
+
+      res.status(201).json({ message: "Produto criado com sucesso", productId: produtoId });
+  
+  } catch (error) {
+      console.error("Erro ao criar produto:", error);
+      res.status(500).json({ message: "Erro ao criar produto" });
+  }
 };
 
 
@@ -31,7 +56,7 @@ exports.updateProduct = async (req, res) => {
     console.log('Request File:', req.file); // Log do arquivo da requisição
 
     const { id } = req.params;
-    const { nome_produto, desc_produto, val_venda } = req.body;
+    const { nome_produto, desc_produto, val_venda, categorias } = req.body;
     const foto_produto = req.file ? req.file.buffer : null;
 
     if (!nome_produto || !desc_produto || val_venda == null || !foto_produto) {
@@ -48,6 +73,11 @@ exports.updateProduct = async (req, res) => {
             return res.status(404).json({ message: "Produto não encontrado" });
         }
 
+        await db.query('DELETE FROM tb_produto_categoria WHERE id_produto = ?', [id]);
+        for (const categoriaId of categorias) {
+            await db.query('INSERT INTO tb_produto_categoria (id_produto, id_categoria) VALUES (?, ?)', [id, categoriaId]);
+        }
+
         res.status(200).json({ message: "Produto atualizado com sucesso" });
     } catch (error) {
         console.error("Erro ao atualizar produto:", error);
@@ -60,6 +90,8 @@ exports.deleteProduct = async (req, res) => {
     const { id } = req.params;
 
     try {
+        await db.query('DELETE FROM tb_produto_categoria WHERE id_produto = ?', [id]);
+
         const result = await db.query(
             'DELETE FROM tb_produto WHERE id_produto = ?',
             [id]

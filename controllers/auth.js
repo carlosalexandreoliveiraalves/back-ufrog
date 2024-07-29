@@ -71,7 +71,7 @@ exports.login = async (req, res, next) => {
 
         const token = jwt.sign(
             { userId: user.id, email: user.email, fk_tipo_usuario: user.fk_tipo_usuario },
-            'senhadaufrogparaseguranca',
+            process.env.JWT_SECRET, //Aqui estava a senha antiga
             { expiresIn: '1h' }
         );
 
