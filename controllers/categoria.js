@@ -1,7 +1,9 @@
 const Categoria = require('../models/categoria');
 const db = require('../util/database');
+const multer = require('multer');
+const upload = multer(); // Configuração básica do multer
 
-// Cria uma nova categoria
+// Middleware para processar multipart/form-data
 exports.createCategory = async (req, res) => {
     console.log('Request Body:', req.body); // Log do corpo da requisição
 
@@ -31,6 +33,8 @@ exports.updateCategory = async (req, res) => {
     const { id } = req.params;
     const { nome_cat } = req.body;
 
+    
+
     if (!nome_cat) {
         return res.status(400).json({ message: "O nome da categoria é obrigatório" });
     }
@@ -57,6 +61,8 @@ exports.deleteCategory = async (req, res) => {
     const { id } = req.params;
 
     try {
+        await db.query('DELETE FROM tb_produto_categoria WHERE id_categoria = ?', [id]);
+        
         const result = await db.query(
             'DELETE FROM tb_categoria WHERE id = ?',
             [id]

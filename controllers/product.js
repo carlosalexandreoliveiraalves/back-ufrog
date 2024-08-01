@@ -15,6 +15,11 @@ exports.createProduct = async (req, res) => {
 
   // Converta categorias de string para array de IDs
   const categoriasArray = categorias ? categorias.split(',').map(id => parseInt(id.trim(), 10)) : [];
+
+  // Adicione a categoria padrão "9" se nenhuma categoria foi fornecida
+  if (categoriasArray.length === 0) {
+      categoriasArray.push(9);
+  }
   
   // Verifique se val_venda é um número válido
   if (isNaN(parseFloat(val_venda))) {
@@ -52,38 +57,62 @@ exports.createProduct = async (req, res) => {
 
 // Atualiza um produto existente
 exports.updateProduct = async (req, res) => {
-    console.log('Request Body:', req.body); // Log do corpo da requisição
-    console.log('Request File:', req.file); // Log do arquivo da requisição
+  console.log('Request Body:', req.body); // Log do corpo da requisição
+  console.log('Request File:', req.file); // Log do arquivo da requisição
 
-    const { id } = req.params;
-    const { nome_produto, desc_produto, val_venda, categorias } = req.body;
-    const foto_produto = req.file ? req.file.buffer : null;
+  const { id } = req.params;
+  const { nome_produto, desc_produto, val_venda, categorias } = req.body;
+  const foto_produto = req.file ? req.file.buffer : null;
 
-    if (!nome_produto || !desc_produto || val_venda == null || !foto_produto) {
-        return res.status(400).json({ message: "Todos os campos são obrigatórios" });
-    }
+  if (!nome_produto || !desc_produto || val_venda == null || (!foto_produto && !req.body.foto_produto)) {
+      return res.status(400).json({ message: "Todos os campos são obrigatórios" });
+  }
 
-    try {
-        const result = await db.query(
-            'UPDATE tb_produto SET nome_produto = ?, desc_produto = ?, val_venda = ?, foto_produto = ? WHERE id_produto = ?',
-            [nome_produto, desc_produto, val_venda, foto_produto, id]
-        );
+  // Converta categorias de string para array de IDs
+  const categoriasArray = categorias ? categorias.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id)) : [];
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Produto não encontrado" });
-        }
+  // Adicione a categoria padrão "9" se nenhuma categoria foi fornecida
+  if (categoriasArray.length === 0) {
+    categoriasArray.push(9);
+  }
 
-        await db.query('DELETE FROM tb_produto_categoria WHERE id_produto = ?', [id]);
-        for (const categoriaId of categorias) {
-            await db.query('INSERT INTO tb_produto_categoria (id_produto, id_categoria) VALUES (?, ?)', [id, categoriaId]);
-        }
+  // Verifique se val_venda é um número válido
+  if (isNaN(parseFloat(val_venda))) {
+      return res.status(400).json({ message: "Valor de venda inválido" });
+  }
 
-        res.status(200).json({ message: "Produto atualizado com sucesso" });
-    } catch (error) {
-        console.error("Erro ao atualizar produto:", error);
-        res.status(500).json({ message: "Erro ao atualizar produto" });
-    }
+  try {
+      // Atualiza o produto
+      const result = await db.query(
+          'UPDATE tb_produto SET desc_produto = ?, nome_produto = ?, val_venda = ?, foto_produto = ? WHERE id_produto = ?',
+          [desc_produto, nome_produto, val_venda, foto_produto ? foto_produto : req.body.foto_produto, id]
+      );
+
+      // Verifica se a atualização foi bem-sucedida
+      if (result.affectedRows === 0) {
+          return res.status(404).json({ message: "Produto não encontrado" });
+      }
+
+      // Remove categorias antigas e insere as novas
+      await db.query('DELETE FROM tb_produto_categoria WHERE id_produto = ?', [id]);
+
+      for (const categoriaId of categoriasArray) {
+          // Verifica se categoriaId é um número válido
+          if (!isNaN(categoriaId)) {
+              await db.query('INSERT INTO tb_produto_categoria (id_produto, id_categoria) VALUES (?, ?)', [id, categoriaId]);
+          } else {
+              console.error('ID de categoria inválido:', categoriaId);
+          }
+      }
+
+      res.status(200).json({ message: "Produto atualizado com sucesso" });
+
+  } catch (error) {
+      console.error("Erro ao atualizar produto:", error);
+      res.status(500).json({ message: "Erro ao atualizar produto" });
+  }
 };
+
 
 // Deleta um produto existente
 exports.deleteProduct = async (req, res) => {
@@ -124,6 +153,35 @@ exports.listProducts = async (req, res) => {
         console.error("Erro ao listar produtos:", error);
         res.status(500).json({ message: "Erro ao listar produtos" });
     }
+};
+
+// Lista produtos por categoria
+exports.listProductsByCategory = async (req, res) => {
+  const { categoriaId } = req.params;
+
+  try {
+      const [rows] = await db.promise().query(`
+          SELECT p.id_produto, p.nome_produto, p.desc_produto, p.val_venda, p.foto_produto, 
+                   GROUP_CONCAT(c.nome_cat) AS categorias
+            FROM tb_produto p
+            LEFT JOIN tb_produto_categoria pc ON p.id_produto = pc.id_produto
+            LEFT JOIN tb_categoria c ON pc.id_categoria = c.id
+            WHERE pc.id_categoria = ?
+            GROUP BY p.id_produto
+      `, [categoriaId]);
+
+      // Converte o BLOB em Base64
+      const products = rows.map(product => ({
+          ...product,
+          foto_produto: product.foto_produto ? `data:image/jpeg;base64,${product.foto_produto.toString('base64')}` : null,
+          categorias: product.categorias ? product.categorias.split(',') : []
+      }));
+
+      res.status(200).json(products);
+  } catch (error) {
+      console.error("Erro ao listar produtos por categoria:", error);
+      res.status(500).json({ message: "Erro ao listar produtos por categoria" });
+  }
 };
 
 
