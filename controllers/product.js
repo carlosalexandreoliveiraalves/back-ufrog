@@ -184,6 +184,66 @@ exports.listProductsByCategory = async (req, res) => {
   }
 };
 
+// Lista produtos por múltiplas categorias
+exports.listProductsByMultipleCategories = async (req, res) => {
+  const { categoriaIds } = req.body;
+
+  // Caso nenhum ID de categoria seja fornecido, listar todos os produtos
+  if (!categoriaIds || !Array.isArray(categoriaIds) || categoriaIds.length === 0) {
+      try {
+          const [rows] = await db.promise().query(`
+              SELECT p.id_produto, p.nome_produto, p.desc_produto, p.val_venda, p.foto_produto,
+                     GROUP_CONCAT(c.nome_cat) AS categorias
+                FROM tb_produto p
+                LEFT JOIN tb_produto_categoria pc ON p.id_produto = pc.id_produto
+                LEFT JOIN tb_categoria c ON pc.id_categoria = c.id
+                GROUP BY p.id_produto
+          `);
+
+          // Converte o BLOB em Base64
+          const products = rows.map(product => ({
+              ...product,
+              foto_produto: product.foto_produto ? `data:image/jpeg;base64,${product.foto_produto.toString('base64')}` : null,
+              categorias: product.categorias ? product.categorias.split(',') : []
+          }));
+
+          return res.status(200).json(products);
+      } catch (error) {
+          console.error("Erro ao listar todos os produtos:", error);
+          return res.status(500).json({ message: "Erro ao listar todos os produtos" });
+      }
+  }
+
+  // Caso um ou mais IDs de categoria sejam fornecidos
+  try {
+      const placeholders = categoriaIds.map(() => '?').join(',');
+      const query = `
+          SELECT p.id_produto, p.nome_produto, p.desc_produto, p.val_venda, p.foto_produto,
+                 GROUP_CONCAT(c.nome_cat) AS categorias
+            FROM tb_produto p
+            INNER JOIN tb_produto_categoria pc ON p.id_produto = pc.id_produto
+            INNER JOIN tb_categoria c ON pc.id_categoria = c.id
+            WHERE pc.id_categoria IN (${placeholders})
+            GROUP BY p.id_produto
+            HAVING COUNT(DISTINCT pc.id_categoria) = ?
+      `;
+
+      const [rows] = await db.promise().query(query, [...categoriaIds, categoriaIds.length]);
+
+      // Converte o BLOB em Base64
+      const products = rows.map(product => ({
+          ...product,
+          foto_produto: product.foto_produto ? `data:image/jpeg;base64,${product.foto_produto.toString('base64')}` : null,
+          categorias: product.categorias ? product.categorias.split(',') : []
+      }));
+
+      res.status(200).json(products);
+  } catch (error) {
+      console.error("Erro ao listar produtos por múltiplas categorias:", error);
+      res.status(500).json({ message: "Erro ao listar produtos por múltiplas categorias" });
+  }
+};
+
 
 /*
 import { Component, NgModule, OnInit } from '@angular/core';

@@ -15,6 +15,7 @@ router.delete('/delete/:id', productController.deleteProduct);
 // Rotas acessíveis para todos os usuários
 router.get('/list', productController.listProducts);
 router.get('/list/:categoriaId', productController.listProductsByCategory);
+router.post('/list-multiple-categories', productController.listProductsByMultipleCategories);
 
 module.exports = router;
 
