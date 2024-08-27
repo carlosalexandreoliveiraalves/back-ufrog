@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 
 const User = require('../models/user')
 
@@ -86,3 +87,74 @@ exports.login = async (req, res, next) => {
     }
 };
 
+const transporter = nodemailer.createTransport({
+    service: 'Gmail', // ou outro serviço de e-mail como Yahoo, Outlook, etc.
+    auth: {
+        user: 'ufrognaoresponder@gmail.com', // seu e-mail
+        pass: 'iijk jgpr kkdi hant' // sua senha de e-mail ou uma senha de app gerada
+    }
+});
+
+
+
+exports.esqueciSenha = async (req, res, next) => {
+    const {email} = req.body;
+
+    try {
+        const user = await User.findByEmail(email);
+
+        if (!user) {
+            return res.status(400).json({ message: 'Usuário não encontrado.' });
+        }
+
+        //Token para o link de geração de senha, expira em 15 min
+        const resetToken = jwt.sign(
+            { userId: user.id, email: user.email },
+            process.env.MUDAR_SENHA, //Aqui estava a senha antiga
+            { expiresIn: '15m' }
+        );
+
+        console.log(`Token de redefinição de senha gerado para o email: ${email}`);
+
+        const data = {
+            from: 'ufrogesquecisenha@gmail.com',
+            to: email,
+            subject: 'Link para mudar senha',
+            html: `
+                <h2>Por favor, clique no link abaixo para mudar a sua senha</h2>  
+                <p>${process.env.CLIENT_URL}/resetpassword/${resetToken}</p>
+            `
+        };
+
+        await transporter.sendMail(data);
+
+        res.status(200).json({ message: 'E-mail enviado com sucesso. COnfira ser e-mail.' });
+
+
+    } catch (err) {
+        console.error('Erro ao gerar token ou enviar e-mail:', err);
+        res.status(500).json({ error: 'Erro ao processar solicitação.' });
+        next(err);
+    }
+    
+}
+
+exports.resetarSenha = async (req, res, next) => {
+    const {resetLink, newPass} = req.body;
+
+    if (resetLink) {
+        jwt.verify(resetLink, process.env.MUDAR_SENHA, function(err, decodeData) {
+            if (error) {
+                return res.status(401).json({
+                    error: "Token incorreto ou expirado!";
+                })
+            }
+        })
+    } else {
+        return res.status(401).json({ message: 'Erro de autenticação' });
+
+    }
+
+
+
+}

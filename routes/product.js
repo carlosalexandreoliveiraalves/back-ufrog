@@ -16,6 +16,7 @@ router.delete('/delete/:id', productController.deleteProduct);
 router.get('/list', productController.listProducts);
 router.get('/list/:categoriaId', productController.listProductsByCategory);
 router.post('/list-multiple-categories', productController.listProductsByMultipleCategories);
+router.get('/product/:id', productController.getProductById);
 
 module.exports = router;
 

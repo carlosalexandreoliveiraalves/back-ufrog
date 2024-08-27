@@ -245,6 +245,34 @@ exports.listProductsByMultipleCategories = async (req, res) => {
 };
 
 
+// backend/controllers/product.js
+exports.getProductById = async (req, res) => {
+    const { id } = req.params;
+    console.log('ID recebido:', id); // Log para verificar o ID recebido
+
+    try {
+        const [rows] = await db.promise().query(
+            'SELECT id_produto, desc_produto, val_venda, foto_produto, nome_produto FROM tb_produto WHERE id_produto = ?',
+            [id]
+        );
+
+        console.log('Resultado da consulta:', rows); // Log para verificar o resultado da consulta
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Produto não encontrado' });
+        }
+
+        const product = rows[0];
+        product.foto_produto = product.foto_produto ? `data:image/jpeg;base64,${product.foto_produto.toString('base64')}` : null;
+
+        res.status(200).json(product);
+    } catch (error) {
+        console.error('Erro ao buscar produto:', error);
+        res.status(500).json({ message: 'Erro ao buscar produto' });
+    }
+};
+
+
 /*
 import { Component, NgModule, OnInit } from '@angular/core';
 import { ProductService } from '../../services/product.service';

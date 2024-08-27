@@ -60,4 +60,8 @@ router.post('/login', [
 ],
 authController.login);
 
+router.put('/esqueci-senha', authController.esqueciSenha);
+
+router.put('/trocar-senha', authController.resetarSenha);
+
 module.exports = router;
