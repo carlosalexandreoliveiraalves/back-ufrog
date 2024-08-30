@@ -36,12 +36,9 @@ module.exports = class User {
     };
 
     static async findByCpf(cpf) {
-        const [rows, fields] = await db.promise().query('SELECT * FROM tb_usuario WHERE cpf = ?', [cpf]);
-        if (rows.length > 0) {
-            return Promise.reject('CPF já cadastrado!');
-        }
-        return rows.length;
-    };
+        const [rows] = await db.promise().query('SELECT * FROM tb_usuario WHERE cpf = ?', [cpf]);
+        return rows.length > 0;  // Retorna `true` se o CPF já estiver cadastrado, `false` caso contrário
+    }
 
     static async save(user) {
         const sql = 'INSERT INTO tb_usuario (nome, cpf, email, celular, senha) VALUES (?, ?, ?, ?, ?)';
