@@ -27,6 +27,14 @@ module.exports = class User {
         return null;
     };
 
+    static async findById(id) {
+        const [rows, fields] = await db.promise().query('SELECT * FROM tb_usuario WHERE id_usuario = ?', [id]);
+        if (rows.length > 0) {
+            return rows[0]; 
+        }
+        return null;
+    };
+
     static async findByCpf(cpf) {
         const [rows, fields] = await db.promise().query('SELECT * FROM tb_usuario WHERE cpf = ?', [cpf]);
         if (rows.length > 0) {
@@ -38,6 +46,13 @@ module.exports = class User {
     static async save(user) {
         const sql = 'INSERT INTO tb_usuario (nome, cpf, email, celular, senha) VALUES (?, ?, ?, ?, ?)';
         const values = [user.nome, user.cpf, user.email, user.celular, user.senha];
+        const [result, fields] = await db.promise().query(sql, values);
+        return result;
+    }
+
+    static async updatePassword(userId, hashedSenha) {
+        const sql = 'UPDATE tb_usuario SET senha = ? WHERE id_usuario = ?';
+        const values = [hashedSenha, userId];
         const [result, fields] = await db.promise().query(sql, values);
         return result;
     }

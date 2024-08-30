@@ -19,7 +19,7 @@ router.get('/list', categoryController.listCategories);
 /*
 IMPORTANTE!!!
 
-Devido a eu ter me baseado no CRUD de produtos no front-end, utilizando o FormData para enviar dados que incluem imagem 
+Devido a eu ter me baseado no CRUD de produtos no front, utilizando o FormData para enviar dados que incluem imagem 
 o corpo da requisição não é convertido para JSON, mas enviado como " multipart/form-data".
 resultando que o express não entenda (ele só entende JSON...)
 por isso a utilizando do middleware 'multer', que converte o corpo da requisão com imagem para enviar em JSON
@@ -31,13 +31,14 @@ sem criar uma maneira que leia o JSON diretamente...
 // É 1 hora e meia da manhã... então pedi para o chat deixar meu texto coerente:
 
 /*
- // IMPORTANTE!!!
-// No front-end, ao usar FormData para enviar dados (por exemplo, produtos que incluem imagens),
-// o corpo da requisição é enviado como multipart/form-data, não como JSON.
-// O Express, por padrão, não entende multipart/form-data como JSON.
-// Portanto, para garantir que os dados textuais sejam processados corretamente,
-// usamos o middleware `upload.none()` do Multer. Isso permite que os dados textuais
-// enviados com FormData sejam acessíveis no `req.body`, evitando problemas na manipulação dos dados.
+IMPORTANTE!!!
+
+No front-end, ao usar FormData para enviar dados (por exemplo, produtos que incluem imagens),
+o corpo da requisição é enviado como multipart/form-data, não como JSON.
+O Express, por padrão, não entende multipart/form-data como JSON.
+Portanto, para garantir que os dados textuais sejam processados corretamente,
+usamos o middleware `upload.none()` do Multer. Isso permite que os dados textuais
+enviados com FormData sejam acessíveis no `req.body`, evitando problemas na manipulação dos dados.
 */
 
 

@@ -101,7 +101,7 @@ exports.esqueciSenha = async (req, res, next) => {
     const {email} = req.body;
 
     try {
-        const user = await User.findByEmail(email);
+        const user = await User.checkLoginEmail(email);
 
         if (!user) {
             return res.status(400).json({ message: 'Usuário não encontrado.' });
@@ -109,10 +109,13 @@ exports.esqueciSenha = async (req, res, next) => {
 
         //Token para o link de geração de senha, expira em 15 min
         const resetToken = jwt.sign(
-            { userId: user.id, email: user.email },
-            process.env.MUDAR_SENHA, //Aqui estava a senha antiga
+            { userId: user.id_usuario, email: user.email },  // Certifique-se de incluir userId aqui
+            process.env.MUDAR_SENHA,
             { expiresIn: '15m' }
         );
+
+        console.log(user.id_usuario);
+
 
         console.log(`Token de redefinição de senha gerado para o email: ${email}`);
 
@@ -122,13 +125,13 @@ exports.esqueciSenha = async (req, res, next) => {
             subject: 'Link para mudar senha',
             html: `
                 <h2>Por favor, clique no link abaixo para mudar a sua senha</h2>  
-                <p>${process.env.CLIENT_URL}/resetpassword/${resetToken}</p>
+                <p>${process.env.CLIENT_URL}/redefinirSenha/${resetToken}</p>
             `
         };
 
         await transporter.sendMail(data);
 
-        res.status(200).json({ message: 'E-mail enviado com sucesso. COnfira ser e-mail.' });
+        res.status(200).json({ message: 'E-mail enviado com sucesso. Confira ser e-mail.' });
 
 
     } catch (err) {
@@ -140,21 +143,54 @@ exports.esqueciSenha = async (req, res, next) => {
 }
 
 exports.resetarSenha = async (req, res, next) => {
-    const {resetLink, newPass} = req.body;
+    const { resetLink, newPass } = req.body;
 
     if (resetLink) {
-        jwt.verify(resetLink, process.env.MUDAR_SENHA, function(err, decodeData) {
-            if (error) {
-                return res.status(401).json({
-                    error: "Token incorreto ou expirado!";
-                })
-            }
-        })
+        try {
+            // Verifica se o token é válido
+            jwt.verify(resetLink, process.env.MUDAR_SENHA, async (err, decodedData) => {
+                if (err) {
+                    return res.status(401).json({
+                        error: "Token incorreto ou expirado!"
+                    });
+                }
+
+                console.log(decodedData); 
+
+                // Encontra o usuário pelo ID decodificado no token
+                console.log(decodedData.userId); 
+                const user = await User.findById(decodedData.userId);
+
+
+                if (!user) {
+                    return res.status(400).json({
+                        error: "Usuário com este token não encontrado."
+                    });
+                }
+
+                // Verifica se o e-mail no token é o mesmo do usuário
+                if (user.email !== decodedData.email) {
+                    return res.status(401).json({
+                        error: "O usuário não corresponde ao token."
+                    });
+                }
+
+                // Hashear a nova senha
+                const hashedSenha = await bcrypt.hash(newPass, 12);
+
+                // Atualiza a senha do usuário
+                await User.updatePassword(user.id_usuario, hashedSenha);
+
+                res.status(200).json({
+                    message: "Senha alterada com sucesso!"
+                });
+            });
+        } catch (error) {
+            console.error('Erro ao resetar senha:', error);
+            res.status(500).json({ error: 'Erro ao processar solicitação.' });
+            next(error);
+        }
     } else {
         return res.status(401).json({ message: 'Erro de autenticação' });
-
     }
-
-
-
-}
+};
