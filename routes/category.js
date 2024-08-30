@@ -8,9 +8,9 @@ const upload = require('../middlewares/multer');
 const router = express.Router();
 
 // Rotas para funcionários (admin)
-router.post('/create', upload.none(), categoryController.createCategory); 
-router.put('/update/:id', upload.none(), categoryController.updateCategory);
-router.delete('/delete/:id', categoryController.deleteCategory);
+router.post('/create', [authJWT, authorize, upload.none()], categoryController.createCategory); 
+router.put('/update/:id', [authJWT, authorize, upload.none()], categoryController.updateCategory);
+router.delete('/delete/:id', [authJWT, authorize], categoryController.deleteCategory);
 
 // Rotas acessíveis para todos os usuários
 router.get('/list', categoryController.listCategories);
