@@ -122,9 +122,9 @@ exports.esqueciSenha = async (req, res, next) => {
         const data = {
             from: 'ufrogesquecisenha@gmail.com',
             to: email,
-            subject: 'Link para mudar senha',
+            subject: 'Enlace para cambiar contraseña',
             html: `
-                <h2>Por favor, clique no link abaixo para mudar a sua senha</h2>  
+                <h2>Por favor, hacé clic en el enlace abajo para cambiar tu contraseña</h2>  
                 <p>${process.env.CLIENT_URL}/redefinirSenha/${resetToken}</p>
             `
         };
