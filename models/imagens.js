@@ -7,7 +7,7 @@ class ImagemProduto {
         this.fk_id_produto = fk_id_produto;
     }
 
-    save(fk_id_produto, imagem) {
+    save(fk_id_produto) {
         return db.query('INSERT INTO tb_imagem_produto (imagem, fk_id_produto) VALUES (?, ?)', [this.imagem, this.fk_id_produto]);
     }
 
