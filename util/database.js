@@ -20,12 +20,13 @@ const { promisify } = require("util");
 const config = require('../config/config.json')
 
 const pool = mysql.createPool({
-    host: process.env.MYSQLHOST,  // junction.proxy.rlwy.net
-    port: process.env.MYSQLPORT || 28995,  // 28995
-    user: process.env.MYSQL_USER || 'root',  // root
-    database: process.env.MYSQL_DATABASE || 'railway',  // railway
-    password: process.env.MYSQL_ROOT_PASSWORD   || 'pADBpitAmBNZOOUtEruPTOeUagxYKQRb'  // senha
+    host: process.env.MYSQLHOST, 
+    port: process.env.MYSQLPORT,  
+    user: process.env.MYSQL_USER,  
+    database: process.env.MYSQL_DATABASE, 
+    password: process.env.MYSQL_ROOT_PASSWORD  
 });
+
 
 // Promissificando os métodos do pool de conexões
 pool.query = promisify(pool.query);

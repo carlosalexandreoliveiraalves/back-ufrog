@@ -7,6 +7,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const produtoRoutes = require('./routes/product');
 const categoriasRoutes = require('./routes/category');
+const imagensRoutes = require('./routes/imagens');
 const errorController = require('./controllers/error');
 const authJWT = require('./middlewares/authjwt');
 
@@ -14,8 +15,9 @@ const app = express();
 const ports = process.env.PORT || 3000;
 
 // Configurar CORS para permitir requisições do frontend
+//origin: 'https://ufrog.com.py',
 app.use(cors({
-    origin: 'https://ufrog.com.py',
+    origin: 'http://localhost:4200',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -44,6 +46,8 @@ app.use('/auth', authRoutes);
 app.use('/produto', produtoRoutes);
 
 app.use('/categoria', categoriasRoutes);
+
+app.use('/imagem', imagensRoutes);
 
 // Exemplo de rota protegida
 app.get('/protected', authJWT, (req, res) => {

@@ -3,17 +3,18 @@ const express = require('express');
 const categoryController = require('../controllers/categoria');
 const authorize = require('../middlewares/verifyUserType');
 const authJWT = require('../middlewares/authjwt');
-const upload = require('../middlewares/multer');
+const uploadNone = require('../middlewares/multerNone');
 
 const router = express.Router();
 
 // Rotas para funcionários (admin)
-router.post('/create', [authJWT, authorize, upload.none()], categoryController.createCategory); 
-router.put('/update/:id', [authJWT, authorize, upload.none()], categoryController.updateCategory);
+router.post('/create', [authJWT, authorize, uploadNone.none()], categoryController.createCategory); 
+router.put('/update/:id', [authJWT, authorize, uploadNone.none()], categoryController.updateCategory);
 router.delete('/delete/:id', [authJWT, authorize], categoryController.deleteCategory);
 
 // Rotas acessíveis para todos os usuários
 router.get('/list', categoryController.listCategories);
+router.get('/listByProduct/:id', categoryController.listCategoriesByProduct);
 
 
 /*

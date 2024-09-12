@@ -2,6 +2,12 @@ const multer = require('multer');
 
 const storage = multer.memoryStorage();
 
-const upload = multer({ storage: storage });
+const uploadSingle = multer({ storage: storage }).single('foto_produto');
 
-module.exports = upload;
+const uploadMultiple = multer({storage: storage}).array('imagens', 10);
+
+
+module.exports = {
+    uploadMultiple,
+    uploadSingle
+  };

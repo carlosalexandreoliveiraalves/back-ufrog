@@ -6,7 +6,7 @@ const upload = multer(); // Configuração básica do multer
 // Middleware para processar multipart/form-data
 exports.createCategory = async (req, res) => {
     console.log('Request Body:', req.body); // Log do corpo da requisição
-
+    console.log('Dados recebidos:', req.body);
     const { nome_cat } = req.body;
 
     if (!nome_cat) {
@@ -85,6 +85,21 @@ exports.listCategories = async (req, res) => {
         const [rows, fields] = await db.promise().query('SELECT id, nome_cat FROM tb_categoria');
 
         res.status(200).json(rows);
+    } catch (error) {
+        console.error("Erro ao listar categorias:", error);
+        res.status(500).json({ message: "Erro ao listar categorias" });
+    }
+};
+
+// Lista todas as categorias do produto 
+exports.listCategoriesByProduct = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const [rows, fields] = await db.promise().query('select tc.id, tc.nome_cat from db_ufrog.tb_categoria tc inner join db_ufrog.tb_produto_categoria tpc on tc.id = tpc.id_categoria inner join db_ufrog.tb_produto tp on tpc.id_produto = tp.id_produto where tp.id_produto = ?', 
+        [id]);
+        res.status(200).json(rows);
+        
     } catch (error) {
         console.error("Erro ao listar categorias:", error);
         res.status(500).json({ message: "Erro ao listar categorias" });
