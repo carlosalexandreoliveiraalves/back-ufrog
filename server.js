@@ -17,7 +17,7 @@ const ports = process.env.PORT || 3000;
 // Configurar CORS para permitir requisições do frontend
 //origin: 'https://ufrog.com.py',
 app.use(cors({
-    origin: 'http://localhost:4200',
+    origin: 'CLIENT_URL',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
