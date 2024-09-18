@@ -7,3 +7,5 @@ class Categoria {
         this.nome_cat = nome_cat;
     };
 };
+
+module.exports = Categoria;

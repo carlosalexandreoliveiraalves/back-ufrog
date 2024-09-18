@@ -7,8 +7,11 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const produtoRoutes = require('./routes/product');
 const categoriasRoutes = require('./routes/category');
+const marcaRoutes = require('./routes/brand');
 const imagensRoutes = require('./routes/imagens');
 const errorController = require('./controllers/error');
+
+
 const authJWT = require('./middlewares/authjwt');
 
 const app = express();
@@ -46,6 +49,8 @@ app.use('/auth', authRoutes);
 app.use('/produto', produtoRoutes);
 
 app.use('/categoria', categoriasRoutes);
+
+app.use('/marca', marcaRoutes);
 
 app.use('/imagem', imagensRoutes);
 

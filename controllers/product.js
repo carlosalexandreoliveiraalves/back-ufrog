@@ -6,10 +6,22 @@ exports.createProduct = async (req, res) => {
   console.log("Request Body:", req.body); // Log do corpo da requisição
   console.log("Request File:", req.file); // Log do arquivo da requisição
 
-  const { nome_produto, desc_produto, val_venda, categorias } = req.body;
+  const {
+    nome_produto,
+    desc_produto,
+    val_venda,
+    categorias,
+    marca: id_marca,
+  } = req.body;
   const foto_produto = req.file ? req.file.buffer : null;
 
-  if (!nome_produto || !desc_produto || !val_venda || !foto_produto) {
+  if (
+    !nome_produto ||
+    !desc_produto ||
+    !val_venda ||
+    !foto_produto ||
+    !id_marca
+  ) {
     return res
       .status(400)
       .json({ message: "Todos os campos são obrigatórios" });
@@ -37,7 +49,8 @@ exports.createProduct = async (req, res) => {
       desc_produto,
       nome_produto,
       val_venda,
-      foto_produto
+      foto_produto,
+      id_marca
     );
 
     // Salva o produto e obtém o ID
@@ -72,9 +85,15 @@ exports.createProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   console.log("Request Body:", req.body); // Log do corpo da requisição
   console.log("Request File:", req.file); // Log do arquivo da requisição
-
   const { id } = req.params;
-  const { nome_produto, desc_produto, val_venda, categorias } = req.body;
+
+  const {
+    nome_produto,
+    desc_produto,
+    val_venda,
+    categorias,
+    marca: id_marca,
+  } = req.body;
   const foto_produto = req.file ? req.file.buffer : null;
 
   if (!nome_produto || !desc_produto || val_venda == null) {
@@ -103,7 +122,7 @@ exports.updateProduct = async (req, res) => {
 
   try {
     //Primeiro é feito uma verificação se foi enviado uma imagem, caso não tenha sido,
-    //ele pegará a imagem do produto atual no banco e jogará para ele mesmo... 
+    //ele pegará a imagem do produto atual no banco e jogará para ele mesmo...
     //Não consegui fazer uma solução no front... Deve ser refatorado...
     const [existingProduct] = await db.query(
       "SELECT foto_produto FROM tb_produto WHERE id_produto = ?",
@@ -119,17 +138,14 @@ exports.updateProduct = async (req, res) => {
       ? foto_produto
       : existingProduct.foto_produto;
 
-
     // Atualiza o produto
-    const result = await db.query(
-      "UPDATE tb_produto SET desc_produto = ?, nome_produto = ?, val_venda = ?, foto_produto = ? WHERE id_produto = ?",
-      [
-        desc_produto,
-        nome_produto,
-        val_venda,
-        fotoToUpdate,
-        id,
-      ]
+    const result = await Produto.update(
+      id,
+      desc_produto,
+      nome_produto,
+      val_venda,
+      fotoToUpdate,
+      id_marca
     );
 
     // Verifica se a atualização foi bem-sucedida
@@ -170,6 +186,10 @@ exports.deleteProduct = async (req, res) => {
       id,
     ]);
 
+    await db.query("DELETE FROM tb_imagem_produto WHERE fk_id_produto = ?", [
+      id,
+    ]);
+
     const result = await db.query(
       "DELETE FROM tb_produto WHERE id_produto = ?",
       [id]
@@ -192,7 +212,7 @@ exports.listProducts = async (req, res) => {
     const [rows, fields] = await db
       .promise()
       .query(
-        "SELECT id_produto, desc_produto, val_venda, foto_produto, nome_produto FROM tb_produto"
+        "SELECT tp.*, tm.nome_marca FROM tb_produto tp INNER JOIN tb_marcas tm ON tp.fk_id_marca = tm.id_marca"
       );
 
     // Converte o BLOB em Base64
@@ -349,98 +369,73 @@ exports.getProductById = async (req, res) => {
   }
 };
 
-/*
-import { Component, NgModule, OnInit } from '@angular/core';
-import { ProductService } from '../../services/product.service';
-import { CommonModule, NgFor } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+exports.listProductsByBrandAndCategory = async (req, res) => {
+  const { marcaId } = req.query; // Marca ainda é passada como query
+  const { categoriaIds } = req.body; // Categorias são passadas pelo corpo da requisição
 
-@Component({
-  selector: 'app-crud-produto',
-  standalone: true,
-  imports: [NgFor, CommonModule, FormsModule],
-  templateUrl: './crud-produto.component.html',
-  styleUrl: './crud-produto.component.scss'
-})
-export class CrudProdutoComponent implements OnInit {
-  products: any[] = [];
-  newProduct = {
-    nome_produto: '', 
-    desc_produto: '', 
-    val_venda: '', 
-    foto_produto: ''
-  };
-  editingProduct: any = null;
-  selectedFile: File | null = null;
-
-  constructor(private productService: ProductService) {}
-
-  ngOnInit(): void {
-    this.loadProducts();
+  // Validação: Verifica se marcaId ou categoriaIds foram fornecidos
+  if (!marcaId && (!categoriaIds || categoriaIds.length === 0)) {
+    return res.status(400).json({ message: "Marca ou categorias devem ser fornecidos" });
   }
 
-  loadProducts(): void {
-    this.productService.getProducts().subscribe(products => {
-      console.log(products); // Adicione esta linha para depuração
-      this.products = products;
-    });
-  }
+  try {
+    // Inicia a query base
+    let query = `
+      SELECT tp.id_produto, tp.nome_produto, tp.desc_produto, tp.val_venda, tp.foto_produto, tm.nome_marca,
+             GROUP_CONCAT(DISTINCT tc.nome_cat) AS categorias
+        FROM tb_produto tp
+        INNER JOIN tb_marcas tm ON tp.fk_id_marca = tm.id_marca
+        LEFT JOIN tb_produto_categoria tpc ON tp.id_produto = tpc.id_produto
+        LEFT JOIN tb_categoria tc ON tpc.id_categoria = tc.id
+    `;
 
-  get currentProduct() {
-    return this.editingProduct || this.newProduct;
-  }
+    // Filtros opcionais
+    const conditions = [];
+    const params = [];
 
-  onFileChange(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.currentProduct.foto_produto = reader.result as string;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  onSubmit(): void {
-    const formData = new FormData();
-    formData.append('nome_produto', this.currentProduct.nome_produto);
-    formData.append('desc_produto', this.currentProduct.desc_produto);
-    formData.append('val_venda', this.currentProduct.val_venda);
-    if (this.selectedFile) {
-        formData.append('foto_produto', this.selectedFile, this.selectedFile.name);
+    // Filtra por marca, se fornecida
+    if (marcaId) {
+      conditions.push("tp.fk_id_marca = ?");
+      params.push(marcaId);
     }
 
-    if (this.editingProduct) {
-        this.productService.updateProduct(this.editingProduct.id_produto, formData).subscribe(() => {
-            this.loadProducts();
-            this.editingProduct = null;
-        });
-    } else {
-        this.productService.createProduct(formData).subscribe(() => {
-            this.loadProducts();
-            this.newProduct = {
-                nome_produto: '', 
-                desc_produto: '', 
-                val_venda: '', 
-                foto_produto: ''
-            };
-            this.selectedFile = null;
-        });
+    // Filtra por múltiplas categorias, se fornecidas
+    if (categoriaIds && Array.isArray(categoriaIds) && categoriaIds.length > 0) {
+      const placeholders = categoriaIds.map(() => "?").join(",");
+      conditions.push(`
+        tp.id_produto IN (
+          SELECT id_produto 
+          FROM tb_produto_categoria 
+          WHERE id_categoria IN (${placeholders})
+          GROUP BY id_produto 
+          HAVING COUNT(DISTINCT id_categoria) = ?
+        )
+      `);
+      params.push(...categoriaIds, categoriaIds.length);
     }
-}
 
-  editProduct(product: any): void {
-    this.editingProduct = { ...product };
-  }
+    // Se houver filtros, adicione-os à query
+    if (conditions.length > 0) {
+      query += " WHERE " + conditions.join(" AND ");
+    }
 
-  cancelEdit(): void {
-    this.editingProduct = null;
-  }
+    query += " GROUP BY tp.id_produto";
 
-  deleteProduct(id: string): void {
-    this.productService.deleteProduct(id).subscribe(() => {
-      this.loadProducts();
-    });
+    // Executa a query
+    const [rows] = await db.promise().query(query, params);
+
+    // Converte o BLOB em Base64 para exibir a imagem
+    const products = rows.map((product) => ({
+      ...product,
+      foto_produto: product.foto_produto
+        ? `data:image/jpeg;base64,${product.foto_produto.toString("base64")}`
+        : null,
+      categorias: product.categorias ? product.categorias.split(",") : [],
+    }));
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Erro ao listar produtos por marca e categorias:", error);
+    res.status(500).json({ message: "Erro ao listar produtos por marca e categorias" });
   }
-}
-*/
+};
