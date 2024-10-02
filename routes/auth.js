@@ -3,6 +3,7 @@ const { body } = require("express-validator");
 
 const router = express.Router();
 
+const verifyId = require("../middlewares/verifyUserId");
 const User = require("../models/user");
 const authController = require("../controllers/auth");
 
@@ -44,9 +45,70 @@ router.post(
       .trim()
       .isLength({ min: 7 })
       .withMessage("A senha deve ter no mínimo 7 caracteres."),
+
+    // Validação para o campo 'data' (Data de nascimento)
+    body("data")
+      .isDate()
+      .withMessage("Por favor, insira uma data de nascimento válida.")
+      .not()
+      .isEmpty()
+      .withMessage("Data de nascimento é obrigatória."),
+
+    // Validação para o campo 'enderecoTipo' (Tipo de endereço)
+    body("enderecoTipo")
+      .isString()
+      .withMessage("Por favor, insira um tipo de endereço válido.")
+      .trim()
+      .not()
+      .isEmpty()
+      .withMessage("Tipo de endereço é obrigatório."),
+
+    // Validação para o campo 'destinatario'
+    body("destinatario")
+      .isString()
+      .withMessage("Por favor, insira um nome de destinatário válido.")
+      .trim()
+      .not()
+      .isEmpty()
+      .withMessage("Destinatário é obrigatório."),
+
+    // Validação para o campo 'endereco'
+    body("endereco")
+      .isString()
+      .withMessage("Por favor, insira um endereço válido.")
+      .trim()
+      .not()
+      .isEmpty()
+      .withMessage("Endereço é obrigatório."),
+
+    // Validação para o campo 'referencia' (opcional, mas você pode validar se quiser)
+    body("referencia")
+      .optional()
+      .isString()
+      .withMessage("Por favor, insira uma referência válida."),
+
+    // Validação para o campo 'latitude'
+    body("latitude")
+      .isFloat({ min: -90, max: 90 })
+      .withMessage("Latitude deve ser um valor numérico válido entre -90 e 90.")
+      .not()
+      .isEmpty()
+      .withMessage("Latitude é obrigatória."),
+
+    // Validação para o campo 'longitude'
+    body("longitude")
+      .isFloat({ min: -180, max: 180 })
+      .withMessage(
+        "Longitude deve ser um valor numérico válido entre -180 e 180."
+      )
+      .not()
+      .isEmpty()
+      .withMessage("Longitude é obrigatória."),
   ],
   authController.cadastro
 );
+
+router.post("/verify-email/:token", authController.verifyEmail);
 
 router.post(
   "/login",
@@ -63,8 +125,12 @@ router.post(
   authController.login
 );
 
+router.put('/update', verifyId, authController.updateUserInfo);
+
 router.put("/esqueci-senha", authController.esqueciSenha);
 
 router.put("/trocar-senha", authController.resetarSenha);
+
+router.get("/minha-conta", verifyId, authController.getUserInfo);
 
 module.exports = router;

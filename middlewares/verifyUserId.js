@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-const authenticateJWT = (req, res, next) => {
+const verifyId = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (authHeader) {
@@ -9,11 +9,11 @@ const authenticateJWT = (req, res, next) => {
         jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
             if (err) {
                 console.error("Erro na verificação do token:", err);
-                return res.sendStatus(403); // Forbidden
+                return res.sendStatus(401); // Forbidden
             }
 
             console.log("Token verificado com sucesso:", user);
-            req.user = user;
+            req.userId = user.userId;
 
 
             console.log("userId do token: ", user.userId);
@@ -30,4 +30,4 @@ const authenticateJWT = (req, res, next) => {
     }
 };
 
-module.exports = authenticateJWT;
+module.exports = verifyId;
